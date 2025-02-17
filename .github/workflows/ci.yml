@@ -34,8 +34,7 @@ jobs:
       matrix:
         features: [fancy, syntect-highlighter]
         rust: [1.70.0, stable]
-#        os: [ubuntu-latest, macOS-latest, windows-latest]  # TODO
-        os: [macOS-latest, windows-latest]
+        os: [ubuntu-latest, macOS-latest, windows-latest]
         exclude:
           - features: syntect-highlighter
             rust: 1.70.0
@@ -52,7 +51,7 @@ jobs:
 #        run: cargo clippy --all -- -D warnings
       - name: Run tests
         if: matrix.rust == 'stable'
-        run: cargo test --all --verbose --features ${{matrix.features}}
+        run: cargo test --all --verbose --features ${{matrix.features}} --package miette --test graphical syntax_highlighter -- --exact --nocapture
       - name: Run tests
         if: matrix.rust == '1.70.0'
         run: cargo test --all --verbose --features ${{matrix.features}} no-format-args-capture
