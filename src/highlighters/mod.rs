@@ -13,7 +13,7 @@
 
 use std::{ops::Deref, sync::Arc};
 
-use crate::SpanContents;
+use crate::{SourceCode, SpanContents};
 use owo_colors::Styled;
 
 #[cfg(feature = "syntect-highlighter")]
@@ -39,7 +39,8 @@ pub trait Highlighter {
     /// responsible for the actual rendering.
     fn start_highlighter_state<'h>(
         &'h self,
-        source: &dyn SpanContents<'_>,
+        source: &dyn SourceCode,
+        span: &dyn SpanContents<'_>,
     ) -> Box<dyn HighlighterState + 'h>;
 }
 
@@ -69,11 +70,6 @@ pub(crate) struct MietteHighlighter(Arc<dyn Highlighter + Send + Sync>);
 impl MietteHighlighter {
     pub(crate) fn nocolor() -> Self {
         Self::from(BlankHighlighter)
-    }
-
-    #[cfg(feature = "syntect-highlighter")]
-    pub(crate) fn syntect_truecolor() -> Self {
-        Self::from(SyntectHighlighter::default())
     }
 }
 

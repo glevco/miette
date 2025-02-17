@@ -56,7 +56,7 @@ pub struct MietteHandlerOpts {
     pub(crate) wrap_lines: Option<bool>,
     pub(crate) word_separator: Option<textwrap::WordSeparator>,
     pub(crate) word_splitter: Option<textwrap::WordSplitter>,
-    pub(crate) highlighter: Option<MietteHighlighter>,
+    pub(crate) highlighter: MietteHighlighter,
     pub(crate) show_related_as_nested: Option<bool>,
 }
 
@@ -99,12 +99,15 @@ impl MietteHandlerOpts {
     /// Setting this option will not force color output. In all cases, the
     /// current color configuration via
     /// [`color()`](MietteHandlerOpts::color()) takes precedence over
-    /// highlighter configuration.
+    /// highlighter configuration. However, this option does take precedence over
+    /// [`rgb_colors()`](MietteHandlerOpts::rgb_colors()) (meaning syntax highlighting will be
+    /// enabled if the `syntect-highlighter` feature is enabled, regardless of the value of
+    /// [`MietteHandlerOpts::rgb_colors`]).
     pub fn with_syntax_highlighting(
         mut self,
         highlighter: impl Highlighter + Send + Sync + 'static,
     ) -> Self {
-        self.highlighter = Some(MietteHighlighter::from(highlighter));
+        self.highlighter = MietteHighlighter::from(highlighter);
         self
     }
 
@@ -116,7 +119,7 @@ impl MietteHandlerOpts {
     /// `syntect-highlighter` feature is enabled. Call this method if you want
     /// to disable highlighting when building with this feature.
     pub fn without_syntax_highlighting(mut self) -> Self {
-        self.highlighter = Some(MietteHighlighter::nocolor());
+        self.highlighter = MietteHighlighter::nocolor();
         self
     }
 
@@ -203,6 +206,10 @@ impl MietteHandlerOpts {
     /// first place. That is handled by the [`MietteHandlerOpts::color`]
     /// setting. If colors are not being used, the value of `rgb_colors` has
     /// no effect.
+    ///
+    /// It also does not control colors if the `syntect-highlighter` feature is enabled.
+    /// If colors are being used and that feature is enabled,
+    /// the value of `rgb_colors` has no effect.
     pub fn rgb_colors(mut self, color: RgbColors) -> Self {
         self.rgb_colors = color;
         self
@@ -292,23 +299,12 @@ impl MietteHandlerOpts {
             } else {
                 ThemeStyles::none()
             };
-            #[cfg(not(feature = "syntect-highlighter"))]
-            let highlighter = self.highlighter.unwrap_or_else(MietteHighlighter::nocolor);
-            #[cfg(feature = "syntect-highlighter")]
-            let highlighter = if self.color == Some(false) {
-                MietteHighlighter::nocolor()
-            } else if self.color == Some(true) || syscall::supports_color() {
-                match self.highlighter {
-                    Some(highlighter) => highlighter,
-                    None => match self.rgb_colors {
-                        // Because the syntect highlighter currently only supports 24-bit truecolor,
-                        // respect RgbColor::Never by disabling the highlighter.
-                        // TODO: In the future, find a way to convert the RGB syntect theme
-                        // into an ANSI color theme.
-                        RgbColors::Never => MietteHighlighter::nocolor(),
-                        _ => MietteHighlighter::syntect_truecolor(),
-                    },
-                }
+            let highlighter = if self.color == Some(true) || syscall::supports_color() {
+                // The syntect highlighter currently only supports 24-bit truecolor,
+                // but it disregards RgbColor::Never.
+                // TODO: In the future, find a way to convert the RGB syntect theme
+                // into an ANSI color theme to respect the value of `rgb_colors`.
+                self.highlighter
             } else {
                 MietteHighlighter::nocolor()
             };
@@ -450,7 +446,6 @@ mod syscall {
         }
     }
 
-    #[cfg(feature = "syntect-highlighter")]
     #[inline]
     pub(super) fn supports_color() -> bool {
         cfg_if! {
