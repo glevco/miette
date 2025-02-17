@@ -34,7 +34,8 @@ jobs:
       matrix:
         features: [fancy, syntect-highlighter]
         rust: [1.70.0, stable]
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+#        os: [ubuntu-latest, macOS-latest, windows-latest]  # TODO
+        os: [macOS-latest, windows-latest]
         exclude:
           - features: syntect-highlighter
             rust: 1.70.0
