@@ -1970,7 +1970,7 @@ fn syntax_highlighter() {
 //    ╰────
 // "#
 //     .trim_start_matches('\n');
-//     let colors = "\u{1b}[38;2;180;142;173m";
+    let colors = "\u{1b}[38;2;180;142;173m";
 //     println!("1------------------------------------\n{}", out);
 //     assert!(out.contains(colors));
 //     assert_eq!(expected, strip_ansi_escapes::strip_str(out));
